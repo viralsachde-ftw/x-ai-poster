@@ -13,6 +13,19 @@
       <p class="subtitle">ai posts in your voice, powered by grok</p>
     </header>
 
+    <div id="today-section">
+      <div class="today-header">
+        <h2>today's posts</h2>
+        <div class="today-actions">
+          <button class="btn btn-secondary btn-sm" onclick="generateToday()">generate all</button>
+          <button class="btn btn-secondary btn-sm" onclick="approveAll()">approve all</button>
+        </div>
+      </div>
+      <div id="today-slots" class="today-slots">
+        <p class="empty-state" id="today-empty">loading...</p>
+      </div>
+    </div>
+
     <div class="tabs">
       <button class="tab active" data-tab="custom">custom</button>
       <button class="tab" data-tab="daily">daily life</button>

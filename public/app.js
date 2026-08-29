@@ -30,6 +30,162 @@ function getActiveFormat(tabId) {
   return activeBtn ? activeBtn.dataset.format : 'auto';
 }
 
+// --- today's posts ---
+
+async function loadToday() {
+  const emptyEl = document.getElementById('today-empty');
+  try {
+    const res = await fetch('/api/today');
+    const data = await res.json();
+    if (!data.configured) {
+      emptyEl.textContent = 'kv not configured. add KV_REST_API_URL and KV_REST_API_TOKEN to enable today\'s posts.';
+      return;
+    }
+    if (!data.slots || data.slots.length === 0) {
+      emptyEl.textContent = 'no posts generated yet. hit "generate all" to create today\'s posts.';
+      return;
+    }
+    renderTodaySlots(data);
+  } catch (e) {
+    emptyEl.textContent = 'failed to load today\'s posts';
+    console.error('load today error:', e);
+  }
+}
+
+async function generateToday() {
+  const btn = document.querySelector('.today-actions .btn-sm');
+  btn.disabled = true;
+  btn.textContent = 'generating...';
+  try {
+    const res = await fetch('/api/today', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'generate' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'generation failed');
+    renderTodaySlots(data);
+  } catch (e) {
+    alert('failed to generate: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'generate all';
+  }
+}
+
+async function regenerateSlot(index) {
+  const card = document.querySelectorAll('.slot-card')[index];
+  const btn = card.querySelector('.slot-regen');
+  btn.disabled = true;
+  btn.textContent = 'regenerating...';
+  try {
+    const res = await fetch('/api/today', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'regenerate', slot: index }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'regeneration failed');
+    renderTodaySlots(data);
+  } catch (e) {
+    alert('failed to regenerate: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'regenerate';
+  }
+}
+
+async function approveSlot(index) {
+  try {
+    const res = await fetch('/api/today', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve', slot: index }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'approval failed');
+    renderTodaySlots(data);
+  } catch (e) {
+    alert('failed to approve: ' + e.message);
+  }
+}
+
+async function approveAll() {
+  try {
+    const res = await fetch('/api/today', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve_all' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'approval failed');
+    renderTodaySlots(data);
+  } catch (e) {
+    alert('failed to approve all: ' + e.message);
+  }
+}
+
+async function postSlotNow(index) {
+  const card = document.querySelectorAll('.slot-card')[index];
+  const btn = card.querySelector('.slot-post');
+  btn.disabled = true;
+  btn.textContent = 'posting...';
+  try {
+    const res = await fetch('/api/today', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'post_now', slot: index }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'posting failed');
+    renderTodaySlots(data);
+    if (data.postedUrl) {
+      alert('posted! ' + data.postedUrl);
+    }
+  } catch (e) {
+    alert('failed to post: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'post now';
+  }
+}
+
+function renderTodaySlots(data) {
+  const container = document.getElementById('today-slots');
+  if (!data.slots || data.slots.length === 0) {
+    container.innerHTML = '<p class="empty-state">no posts generated yet. hit "generate all" to create today\'s posts.</p>';
+    return;
+  }
+  container.innerHTML = data.slots.map((slot, i) => {
+    const charCount = slot.text.length;
+    const isOver = charCount > 280;
+    const isPosted = slot.status === 'posted';
+    const isApproved = slot.status === 'approved';
+    return `
+      <div class="slot-card">
+        <div class="slot-header">
+          <span class="slot-label">post ${i + 1} &middot; ${slot.scheduledTime}</span>
+          <div class="slot-meta">
+            <span class="slot-type">${slot.type}</span>
+            <span class="slot-badge ${slot.status}">${slot.status}</span>
+          </div>
+        </div>
+        <div class="slot-text">${escapeHtml(slot.text)}</div>
+        <div class="slot-footer">
+          <span class="slot-chars ${isOver ? 'over' : ''}">${charCount}/280</span>
+          <div class="slot-actions">
+            ${isPosted ? `<span class="slot-done">posted</span>` : `
+              <button class="btn btn-sm btn-secondary slot-regen" onclick="regenerateSlot(${i})">regenerate</button>
+              ${!isApproved ? `<button class="btn btn-sm btn-approve" onclick="approveSlot(${i})">approve</button>` : ''}
+              <button class="btn btn-sm btn-post slot-post" onclick="postSlotNow(${i})">post now</button>
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// --- custom generation ---
+
 async function generateCustom() {
   const context = document.getElementById('context').value.trim();
   if (!context) {
@@ -222,3 +378,4 @@ function escapeHtml(str) {
 }
 
 renderHistory();
+loadToday();

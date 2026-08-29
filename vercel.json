@@ -1,12 +1,20 @@
 {
   "crons": [
     {
-      "path": "/api/cron/daily-life",
+      "path": "/api/cron/generate-daily",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/post-scheduled",
       "schedule": "30 4 * * *"
     },
     {
-      "path": "/api/cron/trending",
-      "schedule": "0 14 * * *"
+      "path": "/api/cron/post-scheduled",
+      "schedule": "30 9 * * *"
+    },
+    {
+      "path": "/api/cron/post-scheduled",
+      "schedule": "30 14 * * *"
     }
   ]
 }
