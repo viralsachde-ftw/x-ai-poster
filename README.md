@@ -95,7 +95,7 @@ this stores your daily posts and duplicate history.
 | `XAI_API_KEY` | your xAI api key from step 2 |
 | `CRON_SECRET` | your random string from step 3 |
 
-(`KV_REST_API_URL` and `KV_REST_API_TOKEN` should already be there from step 5)
+(KV env vars should already be there from step 5 — works with `KV_REST_API_URL`/`KV_REST_API_TOKEN`, `KV_REST_URL`/`KV_REST_TOKEN`, or `REDIS_URL`/token)
 
 ### step 7: redeploy
 
@@ -198,8 +198,8 @@ posts come from a dynamic combo system:
 | `X_CT0` | yes | `ct0` cookie from x.com browser session |
 | `XAI_API_KEY` | yes | xAI grok api key from console.x.ai |
 | `CRON_SECRET` | yes | any random string to protect cron endpoints |
-| `KV_REST_API_URL` | yes | auto-added by vercel kv |
-| `KV_REST_API_TOKEN` | yes | auto-added by vercel kv |
+| `KV_REST_API_URL` | yes | auto-added by vercel kv (also accepts `KV_REST_URL` or `REDIS_URL`) |
+| `KV_REST_API_TOKEN` | yes | auto-added by vercel kv (also accepts `KV_REST_TOKEN`) |
 | `PROXY_URL` | no | residential proxy URL, only if AUTOMATION_DETECTED |
 
 ## local development
