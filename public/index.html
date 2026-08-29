@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>x poster</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>x poster</h1>
+      <p class="subtitle">ai posts in your voice, powered by grok</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="custom">custom</button>
+      <button class="tab" data-tab="daily">daily life</button>
+      <button class="tab" data-tab="trending">trending india</button>
+    </div>
+
+    <div class="tab-content active" id="tab-custom">
+      <div class="form-group">
+        <label for="context">what's on your mind?</label>
+        <textarea id="context" placeholder="type some context, a topic, a mood, a random thought... the ai will write a post in your voice based on this" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>format</label>
+        <div class="format-options">
+          <button class="format-btn active" data-format="auto">auto</button>
+          <button class="format-btn" data-format="one-liner">one-liner</button>
+          <button class="format-btn" data-format="short">short</button>
+          <button class="format-btn" data-format="long">long</button>
+        </div>
+      </div>
+      <button class="btn btn-generate" id="btn-generate-custom" onclick="generateCustom()">generate</button>
+    </div>
+
+    <div class="tab-content" id="tab-daily">
+      <p class="tab-desc">generates a random daily life post from topics like gym, food, city life, overthinking, relationships, music, work, and whatever else a 24 year old in bombay thinks about</p>
+      <div class="form-group">
+        <label>format</label>
+        <div class="format-options">
+          <button class="format-btn active" data-format="auto">auto</button>
+          <button class="format-btn" data-format="one-liner">one-liner</button>
+          <button class="format-btn" data-format="short">short</button>
+          <button class="format-btn" data-format="long">long</button>
+        </div>
+      </div>
+      <button class="btn btn-generate" id="btn-generate-daily" onclick="generateDaily()">generate</button>
+    </div>
+
+    <div class="tab-content" id="tab-trending">
+      <p class="tab-desc">fetches what's trending in india right now and writes a casual take on it</p>
+      <div id="trending-topics" class="trending-list" style="display:none">
+        <label>currently trending:</label>
+        <ul id="trending-ul"></ul>
+      </div>
+      <div class="form-group">
+        <label>format</label>
+        <div class="format-options">
+          <button class="format-btn active" data-format="auto">auto</button>
+          <button class="format-btn" data-format="one-liner">one-liner</button>
+          <button class="format-btn" data-format="short">short</button>
+          <button class="format-btn" data-format="long">long</button>
+        </div>
+      </div>
+      <button class="btn btn-generate" id="btn-generate-trending" onclick="generateTrending()">generate</button>
+      <button class="btn btn-secondary" onclick="fetchTrending()" style="margin-left:8px">refresh trends</button>
+    </div>
+
+    <div id="output-section" style="display:none">
+      <div class="output-card">
+        <div class="output-header">
+          <span class="output-label">generated post</span>
+          <span id="char-count" class="char-count"></span>
+        </div>
+        <div id="output-text" class="output-text"></div>
+        <div class="output-actions">
+          <button class="btn btn-post" onclick="postToX()">post to x</button>
+          <button class="btn btn-copy" onclick="copyPost()">copy</button>
+          <button class="btn btn-secondary" onclick="regenerate()">regenerate</button>
+        </div>
+        <div id="post-status" class="post-status" style="display:none"></div>
+      </div>
+    </div>
+
+    <div id="history-section">
+      <h2>recent posts</h2>
+      <div id="history-list" class="history-list">
+        <p class="empty-state">no posts yet</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "x-ai-poster",
+  "version": "1.0.0",
+  "description": "AI-powered X/Twitter auto-poster with bombay voice, powered by Grok",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'no build step needed'"
+  },
+  "dependencies": {
+    "twitter-api-v2": "^1.18.2"
+  }
+}
