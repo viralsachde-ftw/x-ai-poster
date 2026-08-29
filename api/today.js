@@ -2,10 +2,19 @@ const { generatePost } = require('../lib/grok');
 const { buildPrompt, buildTrendingPrompt } = require('../lib/prompts');
 const { pickRandomTopics, getTrendingTopics } = require('../lib/topics');
 const { postTweet } = require('../lib/twitter');
-const { getToday, setToday, isKVConfigured } = require('../lib/kv');
+const { getToday, setToday, isKVConfigured, addToHistory, isDuplicate } = require('../lib/kv');
 
 const SLOT_TYPES = ['daily', 'daily', 'trending'];
 const SLOT_TIMES = ['10:00 AM', '3:00 PM', '8:00 PM'];
+const SLOT_WINDOWS = [
+  [4.0, 5.0],
+  [9.0, 10.0],
+  [14.0, 15.0],
+];
+
+function randomInRange(min, max) {
+  return min + Math.random() * (max - min);
+}
 
 async function generateSlotPost(type) {
   let prompt, topic;
@@ -18,7 +27,12 @@ async function generateSlotPost(type) {
     topic = topics.join(', ');
     prompt = buildPrompt(topics.join(' and '), 'auto');
   }
-  const text = await generatePost(prompt);
+  let text = await generatePost(prompt);
+  let retries = 0;
+  while (await isDuplicate(text) && retries < 3) {
+    text = await generatePost(prompt);
+    retries++;
+  }
   return { text, topic, type };
 }
 
@@ -48,12 +62,14 @@ module.exports = async function handler(req, res) {
       const slots = [];
       for (let i = 0; i < 3; i++) {
         const post = await generateSlotPost(SLOT_TYPES[i]);
+        const [winMin, winMax] = SLOT_WINDOWS[i];
         slots.push({
           text: post.text,
           topic: post.topic,
           type: post.type,
           status: 'pending',
           scheduledTime: SLOT_TIMES[i],
+          postAtUTC: randomInRange(winMin, winMax),
         });
       }
       const data = { date: dateStr, slots };
@@ -72,12 +88,14 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'no posts generated today' });
       }
       const post = await generateSlotPost(SLOT_TYPES[slot]);
+      const existingPostAt = today.slots[slot].postAtUTC;
       today.slots[slot] = {
         text: post.text,
         topic: post.topic,
         type: post.type,
         status: 'pending',
         scheduledTime: SLOT_TIMES[slot],
+        postAtUTC: existingPostAt || randomInRange(...SLOT_WINDOWS[slot]),
       };
       await setToday(today);
       return res.status(200).json(today);
@@ -119,13 +137,20 @@ module.exports = async function handler(req, res) {
       if (s.status === 'posted') {
         return res.status(400).json({ error: 'already posted' });
       }
+
+      const dup = await isDuplicate(s.text);
+      if (dup) {
+        return res.status(400).json({ error: 'duplicate post — regenerate before posting' });
+      }
+
       const result = await postTweet(s.text);
+      await addToHistory(s.text);
       today.slots[slot].status = 'posted';
       today.slots[slot].tweetId = result.data.id;
       await setToday(today);
       return res.status(200).json({
         ...today,
-        postedUrl: `https://x.com/i/status/${result.data.id}`,
+        postedUrl: result.data.id ? `https://x.com/i/status/${result.data.id}` : null,
       });
     } catch (e) {
       console.error('post now error:', e);
