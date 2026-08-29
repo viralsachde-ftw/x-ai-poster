@@ -1,6 +1,6 @@
 # x poster
 
-ai-powered x/twitter auto-poster that writes posts in your voice, powered by grok (xAI). posts for free using x-automation — no official x api, no per-post charges.
+ai-powered x/twitter auto-poster that writes posts in your voice, powered by grok (xAI). posts for free using x's internal graphql api — no official x api, no per-post charges, no second service to host.
 
 generates posts as a 24 year old guy from bombay/ahmedabad. lowercase, casual, unpolished, dry humor, sometimes lonely, sometimes funny. no corporate language, no motivational bs.
 
@@ -11,6 +11,7 @@ generates posts as a 24 year old guy from bombay/ahmedabad. lowercase, casual, u
 - you can preview, approve, regenerate, or post manually from the dashboard
 - hard-blocks duplicate/similar posts (checks last 200 posts)
 - runs 24/7 in the cloud — no PC needed
+- everything in one vercel deployment — no second service
 
 ## cost
 
@@ -18,10 +19,10 @@ generates posts as a 24 year old guy from bombay/ahmedabad. lowercase, casual, u
 |---------|------|
 | vercel (hosting + crons) | free |
 | vercel kv (storage) | free |
-| render (posting service) | free |
 | grok api (post generation) | ~$0.06/month |
-| residential proxy (only if needed) | $0-3/month |
-| **total** | **$0-3/month** |
+| **total** | **~$0.06/month** |
+
+($5 of grok credits = ~119,000 post generations. lasts years.)
 
 ---
 
@@ -29,7 +30,7 @@ generates posts as a 24 year old guy from bombay/ahmedabad. lowercase, casual, u
 
 ### step 1: get your x.com browser cookies
 
-these are used by x-automation to post as you. no api keys needed.
+these let the app post as you. no api keys needed.
 
 1. open chrome, go to [x.com](https://x.com), log in
 2. press **F12** to open devtools
@@ -40,97 +41,37 @@ these are used by x-automation to post as you. no api keys needed.
 
 these cookies last ~12 months. when they expire you'll see `AUTH_EXPIRED` errors — just re-export them.
 
-### step 2: generate your api keys
+### step 2: get your xAI (grok) api key
 
-you need two random strings. open a terminal and run:
-
-```bash
-# generates a random api key for x-automation
-python3 -c "import secrets; print(secrets.token_hex(32))"
-
-# generates a random cron secret for vercel
-python3 -c "import secrets; print(secrets.token_hex(16))"
-```
-
-save both somewhere. first one = `X_AUTOMATION_API_KEY`, second one = `CRON_SECRET`.
-
-(if you don't have python, just type any long random string — it's just a password you make up)
-
-### step 3: deploy x-automation on render (posting service)
-
-this is the service that actually posts to x. it's a separate python app.
-
-1. go to [github.com/elnino-hub/x-automation](https://github.com/elnino-hub/x-automation)
-2. click **Fork** (top right) to copy it to your github
-3. go to [render.com](https://render.com) and sign up (free)
-4. click **New** > **Web Service**
-5. connect your github account, select your forked `x-automation` repo
-6. fill in the settings:
-
-| setting | value |
-|---------|-------|
-| Name | `x-automation` (or anything) |
-| Runtime | `Python 3` |
-| Build Command | `pip install -r requirements.txt` |
-| Start Command | `uvicorn execution.main:app --host 0.0.0.0 --port $PORT` |
-| Instance Type | `Free` |
-
-7. click **Environment** in the left sidebar, add these variables:
-
-| key | value |
-|-----|-------|
-| `X_AUTH_TOKEN` | your `auth_token` cookie from step 1 |
-| `X_CT0` | your `ct0` cookie from step 1 |
-| `API_KEY` | the first random string from step 2 |
-| `PROXY_URL` | leave blank for now (see step 3b if needed) |
-
-8. click **Deploy Web Service**
-9. wait 2-3 minutes for it to deploy
-
-#### test it
-
-render gives you a URL like `https://x-automation-xxxx.onrender.com`. open these in your browser:
-
-- `https://x-automation-xxxx.onrender.com/health` — should show json with cache info
-- `https://x-automation-xxxx.onrender.com/ip` — shows the outbound IP
-
-save this URL — you'll need it in step 5.
-
-#### step 3b: if you get AUTOMATION_DETECTED errors
-
-render uses datacenter IPs which x sometimes blocks. if posting fails with `AUTOMATION_DETECTED`:
-
-1. sign up at [dataimpulse.com](https://dataimpulse.com) (pay-per-GB, cheapest option)
-2. get your proxy credentials
-3. go to render dashboard > your service > **Environment**
-4. set `PROXY_URL` to `http://username:password@proxy-host:port`
-5. redeploy
-
-at 3 tweets/day this costs literal pennies per month.
-
-### step 4: get your xAI (grok) api key
-
-this is for generating post text. grok-3-mini is dirt cheap.
+this generates the post text. grok-3-mini is dirt cheap.
 
 1. go to [console.x.ai](https://console.x.ai/)
 2. sign up or log in
 3. click **API Keys** > **Create API Key**
 4. copy the key, save it
 
-you get $25 free credits on signup. at ~$0.00021 per generation, that's ~119,000 posts worth.
+you get $25 free credits on signup — that's ~119,000 post generations.
 
-### step 5: deploy x-ai-poster on vercel (this repo)
+### step 3: generate a cron secret
 
-this is the main app — dashboard + cron jobs + post generation.
+open a terminal and run:
+
+```bash
+python3 -c "import secrets; print(secrets.token_hex(16))"
+```
+
+(or just type any long random string — it's just a password you make up to protect cron endpoints)
+
+### step 4: deploy to vercel
 
 1. go to [github.com/viralsachde-ftw/x-ai-poster](https://github.com/viralsachde-ftw/x-ai-poster)
-2. click **Fork** to copy it to your github
+2. click **Fork** (top right) to copy it to your github
 3. go to [vercel.com](https://vercel.com) and sign up (free, use your github)
 4. click **Add New** > **Project**
 5. import your forked `x-ai-poster` repo
 6. click **Deploy** (default settings are fine)
 
-### step 6: set up vercel kv (storage)
+### step 5: set up vercel kv (storage)
 
 this stores your daily posts and duplicate history.
 
@@ -141,7 +82,7 @@ this stores your daily posts and duplicate history.
 5. click **Create & Connect**
 6. it automatically adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` to your project
 
-### step 7: set environment variables
+### step 6: set environment variables
 
 1. in your vercel dashboard, click on your `x-ai-poster` project
 2. go to **Settings** > **Environment Variables**
@@ -149,31 +90,18 @@ this stores your daily posts and duplicate history.
 
 | key | value |
 |-----|-------|
-| `X_AUTOMATION_URL` | your render URL from step 3 (e.g. `https://x-automation-xxxx.onrender.com`) |
-| `X_AUTOMATION_API_KEY` | the first random string from step 2 (same as render's `API_KEY`) |
-| `XAI_API_KEY` | your xAI api key from step 4 |
-| `CRON_SECRET` | the second random string from step 2 |
+| `X_AUTH_TOKEN` | your `auth_token` cookie from step 1 |
+| `X_CT0` | your `ct0` cookie from step 1 |
+| `XAI_API_KEY` | your xAI api key from step 2 |
+| `CRON_SECRET` | your random string from step 3 |
 
-(`KV_REST_API_URL` and `KV_REST_API_TOKEN` should already be there from step 6)
+(`KV_REST_API_URL` and `KV_REST_API_TOKEN` should already be there from step 5)
 
-### step 8: redeploy
+### step 7: redeploy
 
 1. go to **Deployments** tab in your vercel project
 2. click the **...** menu on the latest deployment
 3. click **Redeploy** (so it picks up the new env vars)
-
-### step 9: set up keep-alive ping (optional but recommended)
-
-render free tier spins down after 15 min of inactivity. first request after spindown takes ~30-50 seconds which can cause timeouts.
-
-1. go to [uptimerobot.com](https://uptimerobot.com) (free)
-2. sign up, click **Add New Monitor**
-3. type: **HTTP(s)**
-4. URL: `https://x-automation-xxxx.onrender.com/health`
-5. monitoring interval: **5 minutes**
-6. click **Create Monitor**
-
-this keeps your render service warm 24/7.
 
 ### done
 
@@ -184,7 +112,19 @@ that's it. everything is now running:
 - **~3 PM IST** — post 2 goes out (daily life topic)
 - **~8 PM IST** — post 3 goes out (trending topic)
 
-open your vercel URL to see the dashboard. you can preview today's posts, regenerate ones you don't like, or post manually.
+open your vercel URL to see the dashboard.
+
+---
+
+## if you get AUTOMATION_DETECTED errors
+
+x sometimes blocks requests from cloud server IPs. if this happens, add a residential proxy:
+
+1. sign up at [dataimpulse.com](https://dataimpulse.com) (pay-per-GB, cheapest option — pennies/month at 3 tweets/day)
+2. get your proxy credentials
+3. in vercel > Settings > Environment Variables, add:
+   - `PROXY_URL` = `http://username:password@proxy-host:port`
+4. redeploy
 
 ---
 
@@ -197,7 +137,21 @@ your vercel deployment URL (e.g. `https://x-ai-poster.vercel.app`) is your dashb
 - **daily life** tab — random topic from the combo system
 - **trending india** tab — fetches google trends and writes a casual take
 
-## how the anti-detection works
+## how it works
+
+### daily auto-posting flow
+
+1. **7:30 AM IST** (2:00 UTC) — cron generates 3 posts with randomized posting times, stores in vercel kv
+2. **you check the dashboard** — see all 3 posts, regenerate any you don't like, approve them
+3. **~10:00 AM IST** (randomized within 9:30-10:30 AM) — slot 1 posts automatically
+4. **~3:00 PM IST** (randomized within 2:30-3:30 PM) — slot 2 posts automatically
+5. **~8:00 PM IST** (randomized within 7:30-8:30 PM) — slot 3 posts automatically
+
+posts go out whether you approve them or not (pending = auto-posts too). if you don't like one, regenerate it before its scheduled time.
+
+### how posting works
+
+the app posts directly using x's internal graphql api — the same api your browser uses when you click "Post" on x.com. it uses your browser session cookies (`auth_token` + `ct0`) to authenticate, so no official api keys or per-post charges.
 
 ### randomized posting times
 
@@ -210,7 +164,7 @@ so monday might post at 10:12 AM, tuesday at 9:47 AM, wednesday at 10:31 AM — 
 
 ### duplicate detection
 
-every post is checked against your last 200 posts:
+every post is checked against the last 200 posts before posting:
 - **exact match** — catches identical tweets
 - **similarity check** — uses word overlap scoring (jaccard similarity). if >75% of words match a previous post, it's blocked
 - during generation: auto-regenerates up to 3 times
@@ -227,29 +181,26 @@ posts come from a dynamic combo system:
 
 | error | fix |
 |-------|-----|
-| `AUTOMATION_DETECTED` | add a residential proxy (step 3b) |
+| `AUTOMATION_DETECTED` | add `PROXY_URL` with a residential proxy |
 | `AUTH_EXPIRED` | re-export cookies from x.com (step 1) |
 | `RATE_LIMIT` | posting too much, stay under ~50/day |
 | `DUPLICATE_TWEET` | x rejected it as duplicate — the dedup system should prevent this |
-| cron not firing | check vercel dashboard > Crons tab. make sure you're on a production deployment |
-| render cold start timeout | set up uptimerobot keep-alive (step 9) |
-| `X_AUTOMATION_URL and X_AUTOMATION_API_KEY must be set` | env vars not set in vercel (step 7) |
-| `KV not configured` | vercel kv not connected (step 6) |
+| `ACCOUNT_LOCKED` | log into x.com in browser to unlock, then re-export cookies |
+| cron not firing | check vercel dashboard > Crons tab. must be a production deployment |
+| `X_AUTH_TOKEN and X_CT0 must be set` | env vars not set (step 6) |
+| `KV not configured` | vercel kv not connected (step 5) |
 
 ## env variables reference
 
-| variable | where | description |
-|----------|-------|-------------|
-| `X_AUTOMATION_URL` | vercel | URL of your render x-automation service |
-| `X_AUTOMATION_API_KEY` | vercel | must match the `API_KEY` you set on render |
-| `XAI_API_KEY` | vercel | grok api key from console.x.ai |
-| `CRON_SECRET` | vercel | random string protecting cron endpoints |
-| `KV_REST_API_URL` | vercel | auto-added by vercel kv |
-| `KV_REST_API_TOKEN` | vercel | auto-added by vercel kv |
-| `X_AUTH_TOKEN` | render | auth_token cookie from x.com |
-| `X_CT0` | render | ct0 cookie from x.com |
-| `API_KEY` | render | same value as `X_AUTOMATION_API_KEY` on vercel |
-| `PROXY_URL` | render | residential proxy URL (optional) |
+| variable | required | description |
+|----------|----------|-------------|
+| `X_AUTH_TOKEN` | yes | `auth_token` cookie from x.com browser session |
+| `X_CT0` | yes | `ct0` cookie from x.com browser session |
+| `XAI_API_KEY` | yes | xAI grok api key from console.x.ai |
+| `CRON_SECRET` | yes | any random string to protect cron endpoints |
+| `KV_REST_API_URL` | yes | auto-added by vercel kv |
+| `KV_REST_API_TOKEN` | yes | auto-added by vercel kv |
+| `PROXY_URL` | no | residential proxy URL, only if AUTOMATION_DETECTED |
 
 ## local development
 
@@ -285,7 +236,7 @@ x-ai-poster/
 │   ├── kv.js                 # vercel kv + duplicate detection
 │   ├── prompts.js            # voice prompt + format instructions
 │   ├── topics.js             # dynamic topic combo system
-│   └── twitter.js            # x-automation HTTP client
+│   └── twitter.js            # x graphql api client (direct posting)
 ├── public/
 │   ├── index.html            # dashboard
 │   ├── app.js                # frontend logic
