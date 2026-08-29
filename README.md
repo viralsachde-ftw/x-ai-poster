@@ -30,22 +30,37 @@ generates posts as a 24 year old guy from bombay/ahmedabad. lowercase, casual, u
 
 ## cost estimate
 
+### grok api (post generation)
+
 grok-3-mini pricing: **$0.25/M input tokens, $0.50/M output tokens**
 
-each post uses roughly:
+each post generation uses roughly:
 - ~700 input tokens (voice prompt + format + topic instructions)
 - ~70 output tokens (the actual tweet)
-- **~$0.00021 per post**
+- **~$0.00021 per generation**
 
-| budget | posts | at 3/day lasts |
-|--------|-------|----------------|
-| free tier | rate-limited but $0 | ongoing |
-| $5 | ~23,000 posts | ~21 years |
-| $25 | ~115,000 posts | ~105 years |
+$5 of grok credits = ~23,000 generations. even regenerating 10x/day = ~$0.06/month.
 
-**tldr: $5 is more than enough. you'll literally never run out.**
+### x/twitter api (posting)
 
-even if you regenerate 10 posts per day (dashboard previews + custom), you're spending ~$0.002/day = ~$0.06/month.
+x api switched to **pay-per-use** in feb 2026. no free tier for new developers.
+
+- **$0.015 per post** (text only)
+- **$0.20 per post** (with a URL/link)
+
+buy credits upfront in the [x developer console](https://developer.x.com).
+
+### monthly cost at 3 posts/day
+
+| service | monthly cost |
+|---------|-------------|
+| x api (posting 3/day, text only) | ~$1.40 |
+| grok api (generation + regenerations) | ~$0.06 |
+| vercel hosting (hobby plan) | free |
+| vercel kv (redis storage) | free |
+| **total** | **~$1.50/month** |
+
+regenerating posts on the dashboard only costs grok credits (pennies), not x api credits. you only pay x api when you actually post.
 
 ## setup
 
@@ -83,6 +98,7 @@ npx vercel
    - **API Key Secret** (consumer secret)
    - **Access Token** (with read+write)
    - **Access Token Secret**
+6. buy api credits in the developer console (pay-per-use model)
 
 #### vercel kv (for today's posts feature)
 1. go to your vercel dashboard
