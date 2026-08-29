@@ -34,6 +34,154 @@ header h1 {
   margin-top: 4px;
 }
 
+/* today's posts */
+
+#today-section {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.today-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.today-header h2 {
+  font-size: 16px;
+  color: #888;
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+.today-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.today-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.slot-card {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.slot-label {
+  font-size: 12px;
+  color: #666;
+  text-transform: lowercase;
+}
+
+.slot-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.slot-type {
+  font-size: 10px;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.slot-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.slot-badge.pending {
+  background: #2e2e0a;
+  color: #facc15;
+}
+
+.slot-badge.approved {
+  background: #0a2e1a;
+  color: #4ade80;
+}
+
+.slot-badge.posted {
+  background: #0a1a2e;
+  color: #60a5fa;
+}
+
+.slot-text {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #ddd;
+  white-space: pre-wrap;
+  word-break: break-word;
+  padding: 8px 0;
+}
+
+.slot-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid #1a1a1a;
+}
+
+.slot-chars {
+  font-size: 11px;
+  color: #555;
+}
+
+.slot-chars.over {
+  color: #f44;
+}
+
+.slot-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.slot-done {
+  font-size: 11px;
+  color: #60a5fa;
+}
+
+.btn-approve {
+  background: #166534;
+  color: #4ade80;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-approve:hover:not(:disabled) {
+  background: #15803d;
+}
+
+/* tabs */
+
 .tabs {
   display: flex;
   gap: 4px;
@@ -398,5 +546,22 @@ textarea::placeholder {
   }
   .output-actions .btn {
     width: 100%;
+  }
+  .today-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .slot-footer {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .slot-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .slot-actions .btn {
+    flex: 1;
   }
 }
