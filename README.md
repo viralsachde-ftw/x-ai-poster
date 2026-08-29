@@ -132,7 +132,7 @@ x sometimes blocks requests from cloud server IPs. if this happens, add a reside
 
 your vercel deployment URL (e.g. `https://x-ai-poster.vercel.app`) is your dashboard:
 
-- **today's posts** — top section shows your 3 daily slots with approve/regenerate/post-now buttons
+- **today's posts** — top section shows your 3 daily slots with the actual randomized posting time for each (e.g. "10:12 AM IST", "3:47 PM IST" — different every day). each slot has approve/regenerate/post-now buttons
 - **custom** tab — type any thought and generate a post from it
 - **daily life** tab — random topic from the combo system
 - **trending india** tab — fetches google trends and writes a casual take

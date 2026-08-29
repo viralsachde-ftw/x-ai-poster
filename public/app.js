@@ -148,6 +148,15 @@ async function postSlotNow(index) {
   }
 }
 
+function utcHourToIST(utcHour) {
+  const totalMinutes = Math.round(utcHour * 60) + 330;
+  let h = Math.floor(totalMinutes / 60) % 24;
+  const m = totalMinutes % 60;
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2, '0')} ${suffix}`;
+}
+
 function renderTodaySlots(data) {
   const container = document.getElementById('today-slots');
   if (!data.slots || data.slots.length === 0) {
@@ -159,10 +168,11 @@ function renderTodaySlots(data) {
     const isOver = charCount > 280;
     const isPosted = slot.status === 'posted';
     const isApproved = slot.status === 'approved';
+    const timeLabel = slot.postAtUTC != null ? utcHourToIST(slot.postAtUTC) + ' IST' : slot.scheduledTime;
     return `
       <div class="slot-card">
         <div class="slot-header">
-          <span class="slot-label">post ${i + 1} &middot; ${slot.scheduledTime}</span>
+          <span class="slot-label">post ${i + 1} &middot; ${timeLabel}</span>
           <div class="slot-meta">
             <span class="slot-type">${slot.type}</span>
             <span class="slot-badge ${slot.status}">${slot.status}</span>
