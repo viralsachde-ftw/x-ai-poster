@@ -9,5 +9,7 @@
     "dev": "vercel dev",
     "build": "echo 'no build step needed'"
   },
-  "dependencies": {}
+  "dependencies": {
+    "x-client-transaction-id": "^0.1.0"
+  }
 }
