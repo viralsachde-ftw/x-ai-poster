@@ -65,6 +65,7 @@ async function generateToday() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'generation failed');
     renderTodaySlots(data);
+    loadStats();
   } catch (e) {
     alert('failed to generate: ' + e.message);
   } finally {
@@ -138,6 +139,7 @@ async function postSlotNow(index) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'posting failed');
     renderTodaySlots(data);
+    loadStats();
     if (data.postedUrl) {
       alert('posted! ' + data.postedUrl);
     }
@@ -387,5 +389,19 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    if (!data.configured) return;
+    document.getElementById('stat-total').textContent = data.totalPosts;
+    document.getElementById('stat-today-posted').textContent = `${data.todayPosted}/3`;
+    document.getElementById('stat-today-pending').textContent = data.todayPending + data.todayApproved;
+    document.getElementById('stat-history').textContent = `${data.totalPosts}/200`;
+  } catch (e) {
+    console.error('load stats error:', e);
+  }
+}
+
 renderHistory();
-loadToday();
+loadToday().then(loadStats);

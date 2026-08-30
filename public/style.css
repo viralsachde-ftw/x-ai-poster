@@ -412,6 +412,53 @@ textarea::placeholder {
   border: 1px solid #7f1d1d;
 }
 
+/* usage stats */
+
+#stats-section {
+  margin-top: 40px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+#stats-section h2 {
+  font-size: 16px;
+  color: #666;
+  font-weight: 500;
+  margin-bottom: 16px;
+  text-transform: lowercase;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.stat-card {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
 #history-section {
   margin-top: 40px;
 }
@@ -563,5 +610,8 @@ textarea::placeholder {
   }
   .slot-actions .btn {
     flex: 1;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
