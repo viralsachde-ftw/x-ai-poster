@@ -37,26 +37,26 @@ async function generateSlotPost(type) {
 }
 
 module.exports = async function handler(req, res) {
-  if (!isKVConfigured()) {
-    return res.status(200).json({ configured: false, slots: [] });
-  }
-
-  if (req.method === 'GET') {
-    const today = await getToday();
-    if (!today) {
-      return res.status(200).json({ configured: true, slots: [] });
+  try {
+    if (!isKVConfigured()) {
+      return res.status(200).json({ configured: false, slots: [] });
     }
-    return res.status(200).json({ configured: true, ...today });
-  }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'method not allowed' });
-  }
+    if (req.method === 'GET') {
+      const today = await getToday();
+      if (!today) {
+        return res.status(200).json({ configured: true, slots: [] });
+      }
+      return res.status(200).json({ configured: true, ...today });
+    }
 
-  const { action, slot } = req.body;
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'method not allowed' });
+    }
 
-  if (action === 'generate') {
-    try {
+    const { action, slot } = req.body;
+
+    if (action === 'generate') {
       const now = new Date();
       const dateStr = now.toISOString().split('T')[0];
       const slots = [];
@@ -75,14 +75,9 @@ module.exports = async function handler(req, res) {
       const data = { date: dateStr, slots };
       await setToday(data);
       return res.status(200).json(data);
-    } catch (e) {
-      console.error('generate today error:', e);
-      return res.status(500).json({ error: e.message });
     }
-  }
 
-  if (action === 'regenerate' && typeof slot === 'number' && slot >= 0 && slot < 3) {
-    try {
+    if (action === 'regenerate' && typeof slot === 'number' && slot >= 0 && slot < 3) {
       const today = await getToday();
       if (!today) {
         return res.status(400).json({ error: 'no posts generated today' });
@@ -99,36 +94,31 @@ module.exports = async function handler(req, res) {
       };
       await setToday(today);
       return res.status(200).json(today);
-    } catch (e) {
-      console.error('regenerate slot error:', e);
-      return res.status(500).json({ error: e.message });
     }
-  }
 
-  if (action === 'approve' && typeof slot === 'number' && slot >= 0 && slot < 3) {
-    const today = await getToday();
-    if (!today) {
-      return res.status(400).json({ error: 'no posts generated today' });
+    if (action === 'approve' && typeof slot === 'number' && slot >= 0 && slot < 3) {
+      const today = await getToday();
+      if (!today) {
+        return res.status(400).json({ error: 'no posts generated today' });
+      }
+      today.slots[slot].status = 'approved';
+      await setToday(today);
+      return res.status(200).json(today);
     }
-    today.slots[slot].status = 'approved';
-    await setToday(today);
-    return res.status(200).json(today);
-  }
 
-  if (action === 'approve_all') {
-    const today = await getToday();
-    if (!today) {
-      return res.status(400).json({ error: 'no posts generated today' });
+    if (action === 'approve_all') {
+      const today = await getToday();
+      if (!today) {
+        return res.status(400).json({ error: 'no posts generated today' });
+      }
+      today.slots.forEach((s) => {
+        if (s.status === 'pending') s.status = 'approved';
+      });
+      await setToday(today);
+      return res.status(200).json(today);
     }
-    today.slots.forEach((s) => {
-      if (s.status === 'pending') s.status = 'approved';
-    });
-    await setToday(today);
-    return res.status(200).json(today);
-  }
 
-  if (action === 'post_now' && typeof slot === 'number' && slot >= 0 && slot < 3) {
-    try {
+    if (action === 'post_now' && typeof slot === 'number' && slot >= 0 && slot < 3) {
       const today = await getToday();
       if (!today) {
         return res.status(400).json({ error: 'no posts generated today' });
@@ -152,11 +142,11 @@ module.exports = async function handler(req, res) {
         ...today,
         postedUrl: result.data.id ? `https://x.com/i/status/${result.data.id}` : null,
       });
-    } catch (e) {
-      console.error('post now error:', e);
-      return res.status(500).json({ error: e.message });
     }
-  }
 
-  return res.status(400).json({ error: 'invalid action' });
+    return res.status(400).json({ error: 'invalid action' });
+  } catch (e) {
+    console.error('today api error:', e);
+    return res.status(500).json({ error: e.message });
+  }
 };
