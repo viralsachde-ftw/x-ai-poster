@@ -32,11 +32,20 @@ function getActiveFormat(tabId) {
 
 // --- today's posts ---
 
+async function safeJSON(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(res.ok ? 'invalid response from server' : `server error (${res.status})`);
+  }
+}
+
 async function loadToday() {
   const emptyEl = document.getElementById('today-empty');
   try {
     const res = await fetch('/api/today');
-    const data = await res.json();
+    const data = await safeJSON(res);
     if (!data.configured) {
       emptyEl.textContent = 'kv not configured. add REDIS_URL (or KV_REST_API_URL + KV_REST_API_TOKEN) to your env vars. get it from upstash console or vercel storage.';
       return;
@@ -47,7 +56,7 @@ async function loadToday() {
     }
     renderTodaySlots(data);
   } catch (e) {
-    emptyEl.textContent = 'failed to load today\'s posts';
+    emptyEl.textContent = 'failed to load: ' + e.message;
     console.error('load today error:', e);
   }
 }
@@ -62,7 +71,7 @@ async function generateToday() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'generate' }),
     });
-    const data = await res.json();
+    const data = await safeJSON(res);
     if (!res.ok) throw new Error(data.error || 'generation failed');
     renderTodaySlots(data);
     loadStats();
@@ -85,7 +94,7 @@ async function regenerateSlot(index) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'regenerate', slot: index }),
     });
-    const data = await res.json();
+    const data = await safeJSON(res);
     if (!res.ok) throw new Error(data.error || 'regeneration failed');
     renderTodaySlots(data);
   } catch (e) {
@@ -102,7 +111,7 @@ async function approveSlot(index) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'approve', slot: index }),
     });
-    const data = await res.json();
+    const data = await safeJSON(res);
     if (!res.ok) throw new Error(data.error || 'approval failed');
     renderTodaySlots(data);
   } catch (e) {
@@ -117,7 +126,7 @@ async function approveAll() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'approve_all' }),
     });
-    const data = await res.json();
+    const data = await safeJSON(res);
     if (!res.ok) throw new Error(data.error || 'approval failed');
     renderTodaySlots(data);
   } catch (e) {
@@ -136,7 +145,7 @@ async function postSlotNow(index) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'post_now', slot: index }),
     });
-    const data = await res.json();
+    const data = await safeJSON(res);
     if (!res.ok) throw new Error(data.error || 'posting failed');
     renderTodaySlots(data);
     loadStats();
@@ -233,7 +242,7 @@ async function generate(body, btnId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const data = await res.json();
+    const data = await safeJSON(res);
     if (!res.ok) throw new Error(data.error || 'generation failed');
 
     currentPost = data.post;
@@ -273,7 +282,7 @@ async function postToX() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: currentPost }),
     });
-    const data = await res.json();
+    const data = await safeJSON(res);
     if (!res.ok) throw new Error(data.error || 'posting failed');
 
     showStatus(`posted! <a href="${data.url}" target="_blank" rel="noopener">view on x</a>`, 'success');
@@ -392,7 +401,7 @@ function escapeHtml(str) {
 async function loadStats() {
   try {
     const res = await fetch('/api/stats');
-    const data = await res.json();
+    const data = await safeJSON(res);
     if (!data.configured) return;
     document.getElementById('stat-total').textContent = data.totalPosts;
     document.getElementById('stat-today-posted').textContent = `${data.todayPosted}/3`;
