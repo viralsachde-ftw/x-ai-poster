@@ -38,7 +38,7 @@ async function loadToday() {
     const res = await fetch('/api/today');
     const data = await res.json();
     if (!data.configured) {
-      emptyEl.textContent = 'kv not configured. you need a REST url + token from upstash (not REDIS_URL). add KV_REST_API_URL + KV_REST_API_TOKEN, or UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN to env vars.';
+      emptyEl.textContent = 'kv not configured. add REDIS_URL (or KV_REST_API_URL + KV_REST_API_TOKEN) to your env vars. get it from upstash console or vercel storage.';
       return;
     }
     if (!data.slots || data.slots.length === 0) {
