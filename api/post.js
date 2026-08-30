@@ -37,6 +37,7 @@ module.exports = async function handler(req, res) {
     });
   } catch (e) {
     console.error('post error:', e);
-    return res.status(500).json({ error: e.message });
+    const msg = typeof e === 'object' ? (e.message || JSON.stringify(e)) : String(e);
+    return res.status(500).json({ error: msg });
   }
 };
