@@ -2,11 +2,22 @@ import json
 import os
 import re
 import time
+import traceback
 import uuid
 from http.server import BaseHTTPRequestHandler
 
-from bs4 import BeautifulSoup
-from curl_cffi.requests import Session
+try:
+    from curl_cffi.requests import Session
+    HAS_CURL = True
+except ImportError as e:
+    HAS_CURL = False
+    CURL_ERROR = str(e)
+
+try:
+    from bs4 import BeautifulSoup
+    HAS_BS4 = True
+except ImportError:
+    HAS_BS4 = False
 
 BROWSER = "chrome136"
 CLIENT_UUID = str(uuid.uuid4())
@@ -60,6 +71,9 @@ CACHE_TTL = 3600
 def _scrape_config():
     global _gql_cache, _features_cache, _transaction_ctx, _cache_ts
 
+    if not HAS_CURL:
+        return
+
     if _gql_cache and (time.time() - _cache_ts) < CACHE_TTL:
         return
 
@@ -84,17 +98,18 @@ def _scrape_config():
                     ON_DEMAND_FILE_URL,
                 )
 
-                soup = BeautifulSoup(html, "html.parser")
-                ondemand_match = ON_DEMAND_FILE_REGEX.search(html)
-                if ondemand_match:
-                    chunk_id = ondemand_match.group(1)
-                    hash_pattern = ON_DEMAND_HASH_PATTERN.format(chunk_id)
-                    hash_match = re.search(hash_pattern, html)
-                    if hash_match:
-                        ondemand_url = ON_DEMAND_FILE_URL.format(filename=hash_match.group(1))
-                        od_resp = s.get(ondemand_url, timeout=15)
-                        if od_resp.status_code == 200:
-                            _transaction_ctx = ClientTransaction(soup, od_resp.text)
+                if HAS_BS4:
+                    soup = BeautifulSoup(html, "html.parser")
+                    ondemand_match = ON_DEMAND_FILE_REGEX.search(html)
+                    if ondemand_match:
+                        chunk_id = ondemand_match.group(1)
+                        hash_pattern = ON_DEMAND_HASH_PATTERN.format(chunk_id)
+                        hash_match = re.search(hash_pattern, html)
+                        if hash_match:
+                            ondemand_url = ON_DEMAND_FILE_URL.format(filename=hash_match.group(1))
+                            od_resp = s.get(ondemand_url, timeout=15)
+                            if od_resp.status_code == 200:
+                                _transaction_ctx = ClientTransaction(soup, od_resp.text)
             except Exception as e:
                 print(f"transaction init failed: {e}")
 
@@ -235,6 +250,9 @@ def _attempt_tweet(text, query_id):
 
 
 def do_post_tweet(text):
+    if not HAS_CURL:
+        return {"success": False, "error": f"curl_cffi not available: {CURL_ERROR}"}
+
     query_id = _get_query_id()
     result = _attempt_tweet(text, query_id)
     data = result["data"]
@@ -279,15 +297,31 @@ def do_post_tweet(text):
     return {"success": False, "error": "EMPTY_RESULT: Tweet silently rejected"}
 
 
+def _send_json(handler, status, data):
+    handler.send_response(status)
+    handler.send_header("Content-Type", "application/json")
+    handler.end_headers()
+    handler.wfile.write(json.dumps(data).encode())
+
+
 class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        _send_json(self, 200, {
+            "status": "ok",
+            "curl_cffi": HAS_CURL,
+            "curl_error": CURL_ERROR if not HAS_CURL else None,
+            "bs4": HAS_BS4,
+            "query_id": _gql_cache.get("CreateTweet", FALLBACK_QUERY_ID),
+            "query_id_source": "scraped" if _gql_cache else "fallback",
+            "transaction_ctx": _transaction_ctx is not None,
+            "cache_age": int(time.time() - _cache_ts) if _cache_ts else None,
+        })
+
     def do_POST(self):
         cron_secret = os.environ.get("CRON_SECRET", "")
         auth = self.headers.get("Authorization", "")
         if auth != f"Bearer {cron_secret}":
-            self.send_response(401)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "unauthorized"}).encode())
+            _send_json(self, 401, {"error": "unauthorized"})
             return
 
         length = int(self.headers.get("Content-Length", 0))
@@ -295,21 +329,14 @@ class handler(BaseHTTPRequestHandler):
         text = body.get("text", "")
 
         if not text:
-            self.send_response(400)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": "text is required"}).encode())
+            _send_json(self, 400, {"error": "text is required"})
             return
 
         try:
             result = do_post_tweet(text)
             status = 200 if result.get("success") else 400
-            self.send_response(status)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps(result).encode())
+            _send_json(self, status, result)
         except Exception as e:
-            self.send_response(500)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode())
+            tb = traceback.format_exc()
+            print(f"tweet error: {tb}")
+            _send_json(self, 500, {"success": False, "error": str(e)})
