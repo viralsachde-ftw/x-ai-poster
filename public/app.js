@@ -38,7 +38,7 @@ async function loadToday() {
     const res = await fetch('/api/today');
     const data = await res.json();
     if (!data.configured) {
-      emptyEl.textContent = 'kv not configured. add KV_REST_API_URL and KV_REST_API_TOKEN to enable today\'s posts.';
+      emptyEl.textContent = 'kv not configured. add REDIS_URL (or KV_REST_API_URL + KV_REST_API_TOKEN) to your env vars. get it from upstash console or vercel storage.';
       return;
     }
     if (!data.slots || data.slots.length === 0) {
@@ -65,6 +65,7 @@ async function generateToday() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'generation failed');
     renderTodaySlots(data);
+    loadStats();
   } catch (e) {
     alert('failed to generate: ' + e.message);
   } finally {
@@ -138,6 +139,7 @@ async function postSlotNow(index) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'posting failed');
     renderTodaySlots(data);
+    loadStats();
     if (data.postedUrl) {
       alert('posted! ' + data.postedUrl);
     }
@@ -387,5 +389,19 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+async function loadStats() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+    if (!data.configured) return;
+    document.getElementById('stat-total').textContent = data.totalPosts;
+    document.getElementById('stat-today-posted').textContent = `${data.todayPosted}/3`;
+    document.getElementById('stat-today-pending').textContent = data.todayPending + data.todayApproved;
+    document.getElementById('stat-history').textContent = `${data.totalPosts}/200`;
+  } catch (e) {
+    console.error('load stats error:', e);
+  }
+}
+
 renderHistory();
-loadToday();
+loadToday().then(loadStats);

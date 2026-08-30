@@ -95,7 +95,7 @@ this stores your daily posts and duplicate history.
 | `XAI_API_KEY` | your xAI api key from step 2 |
 | `CRON_SECRET` | your random string from step 3 |
 
-(KV env vars should already be there from step 5 — works with `KV_REST_API_URL`/`KV_REST_API_TOKEN`, `KV_REST_URL`/`KV_REST_TOKEN`, or `REDIS_URL`/token)
+(KV env vars should already be there from step 5 — just `REDIS_URL` works, or any url+token pair like `KV_REST_API_URL`/`KV_REST_API_TOKEN`)
 
 ### step 7: redeploy
 
@@ -188,7 +188,7 @@ posts come from a dynamic combo system:
 | `ACCOUNT_LOCKED` | log into x.com in browser to unlock, then re-export cookies |
 | cron not firing | check vercel dashboard > Crons tab. must be a production deployment |
 | `X_AUTH_TOKEN and X_CT0 must be set` | env vars not set (step 6) |
-| `KV not configured` | vercel kv not connected (step 5) |
+| `KV not configured` | add `REDIS_URL` or `KV_REST_API_URL` + `KV_REST_API_TOKEN`. see step 5 |
 
 ## env variables reference
 
@@ -198,8 +198,11 @@ posts come from a dynamic combo system:
 | `X_CT0` | yes | `ct0` cookie from x.com browser session |
 | `XAI_API_KEY` | yes | xAI grok api key from console.x.ai |
 | `CRON_SECRET` | yes | any random string to protect cron endpoints |
-| `KV_REST_API_URL` | yes | auto-added by vercel kv (also accepts `KV_REST_URL` or `REDIS_URL`) |
-| `KV_REST_API_TOKEN` | yes | auto-added by vercel kv (also accepts `KV_REST_TOKEN`) |
+| `REDIS_URL` | yes* | easiest — just this one URL, auto-parses host + token from it |
+| `KV_REST_API_URL` | yes* | alternative: REST API url (auto-added by vercel kv) |
+| `KV_REST_API_TOKEN` | yes* | alternative: REST API token (auto-added by vercel kv) |
+
+*need either `REDIS_URL` alone, or a url+token pair (`KV_REST_API_*`, `UPSTASH_REDIS_REST_*`, or `KV_REST_*`)
 | `PROXY_URL` | no | residential proxy URL, only if AUTOMATION_DETECTED |
 
 ## local development
