@@ -18,7 +18,7 @@ generates posts as a 24 year old guy from bombay/ahmedabad. lowercase, casual, u
 | service | cost |
 |---------|------|
 | vercel (hosting + crons) | free |
-| vercel kv (storage) | free |
+| redis (storage) | free |
 | grok api (post generation) | ~$0.06/month |
 | **total** | **~$0.06/month** |
 
@@ -71,16 +71,24 @@ python3 -c "import secrets; print(secrets.token_hex(16))"
 5. import your forked `x-ai-poster` repo
 6. click **Deploy** (default settings are fine)
 
-### step 5: set up vercel kv (storage)
+### step 5: set up redis (storage)
 
-this stores your daily posts and duplicate history.
+this stores your daily posts and duplicate history. works with any redis provider.
 
-1. in your vercel dashboard, click on your `x-ai-poster` project
-2. go to **Storage** tab
-3. click **Create Database** > **KV**
-4. select **Hobby (Free)**
-5. click **Create & Connect**
-6. it automatically adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` to your project
+**option A: redis cloud (free)**
+1. go to [redis.io/try-free](https://redis.io/try-free) and create an account
+2. create a free database (30 MB free forever)
+3. copy the **public endpoint** and **default user password**
+4. your REDIS_URL will look like: `redis://default:YOUR_PASSWORD@redis-XXXXX.c123.region.ec2.cloud.redislabs.com:PORT`
+
+**option B: upstash (free)**
+1. go to [upstash.com](https://upstash.com) and create an account
+2. create a free redis database (10k commands/day free)
+3. copy the connection string from the dashboard
+
+**option C: vercel kv**
+1. in your vercel dashboard, go to **Storage** > **Create Database** > **KV**
+2. it auto-adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` to your project (also works)
 
 ### step 6: set environment variables
 
@@ -95,7 +103,7 @@ this stores your daily posts and duplicate history.
 | `XAI_API_KEY` | your xAI api key from step 2 |
 | `CRON_SECRET` | your random string from step 3 |
 
-(KV env vars should already be there from step 5 — just `REDIS_URL` works, or any url+token pair like `KV_REST_API_URL`/`KV_REST_API_TOKEN`)
+(if you used option A or B in step 5, add `REDIS_URL` here too)
 
 ### step 7: redeploy
 
@@ -141,7 +149,7 @@ your vercel deployment URL (e.g. `https://x-ai-poster.vercel.app`) is your dashb
 
 ### daily auto-posting flow
 
-1. **7:30 AM IST** (2:00 UTC) — cron generates 3 posts with randomized posting times, stores in vercel kv
+1. **7:30 AM IST** (2:00 UTC) — cron generates 3 posts with randomized posting times, stores in redis
 2. **you check the dashboard** — see all 3 posts, regenerate any you don't like, approve them
 3. **~10:00 AM IST** (randomized within 9:30-10:30 AM) — slot 1 posts automatically
 4. **~3:00 PM IST** (randomized within 2:30-3:30 PM) — slot 2 posts automatically
@@ -188,7 +196,7 @@ posts come from a dynamic combo system:
 | `ACCOUNT_LOCKED` | log into x.com in browser to unlock, then re-export cookies |
 | cron not firing | check vercel dashboard > Crons tab. must be a production deployment |
 | `X_AUTH_TOKEN and X_CT0 must be set` | env vars not set (step 6) |
-| `KV not configured` | add `REDIS_URL` or `KV_REST_API_URL` + `KV_REST_API_TOKEN`. see step 5 |
+| `KV not configured` | add `REDIS_URL` env var. any redis provider works (step 5) |
 
 ## env variables reference
 
@@ -198,11 +206,11 @@ posts come from a dynamic combo system:
 | `X_CT0` | yes | `ct0` cookie from x.com browser session |
 | `XAI_API_KEY` | yes | xAI grok api key from console.x.ai |
 | `CRON_SECRET` | yes | any random string to protect cron endpoints |
-| `REDIS_URL` | yes* | easiest — just this one URL, auto-parses host + token from it |
-| `KV_REST_API_URL` | yes* | alternative: REST API url (auto-added by vercel kv) |
-| `KV_REST_API_TOKEN` | yes* | alternative: REST API token (auto-added by vercel kv) |
+| `REDIS_URL` | yes* | redis connection URL — works with any provider (redis cloud, upstash, etc.) |
+| `KV_REST_API_URL` | yes* | alternative: upstash/vercel kv REST API url (auto-added by vercel kv) |
+| `KV_REST_API_TOKEN` | yes* | alternative: upstash/vercel kv REST API token (auto-added by vercel kv) |
 
-*need either `REDIS_URL` alone, or a url+token pair (`KV_REST_API_*`, `UPSTASH_REDIS_REST_*`, or `KV_REST_*`)
+*need either `REDIS_URL` alone (recommended), or a REST url+token pair
 | `PROXY_URL` | no | residential proxy URL, only if AUTOMATION_DETECTED |
 
 ## local development
@@ -236,7 +244,7 @@ x-ai-poster/
 │       └── post-scheduled.js # randomized scheduled posting
 ├── lib/
 │   ├── grok.js               # xAI API wrapper
-│   ├── kv.js                 # vercel kv + duplicate detection
+│   ├── kv.js                 # redis storage + duplicate detection
 │   ├── prompts.js            # voice prompt + format instructions
 │   ├── topics.js             # dynamic topic combo system
 │   └── twitter.js            # x graphql api client (direct posting)
