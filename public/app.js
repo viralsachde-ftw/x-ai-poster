@@ -140,17 +140,34 @@ async function postSlotNow(index) {
   btn.disabled = true;
   btn.textContent = 'posting...';
   try {
-    const res = await fetch('/api/today', {
+    const prepRes = await fetch('/api/today', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'post_now', slot: index }),
+      body: JSON.stringify({ action: 'prepare_post', slot: index }),
     });
-    const data = await safeJSON(res);
-    if (!res.ok) throw new Error(data.error || 'posting failed');
-    renderTodaySlots(data);
+    const prepData = await safeJSON(prepRes);
+    if (!prepRes.ok) throw new Error(prepData.error || 'validation failed');
+
+    const tweetRes = await fetch('/api/tweet', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: prepData.text }),
+    });
+    const tweetData = await safeJSON(tweetRes);
+    if (!tweetData.success) throw new Error(tweetData.error || 'posting failed');
+
+    const markRes = await fetch('/api/today', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark_posted', slot: index, tweetId: tweetData.tweet_id }),
+    });
+    const markData = await safeJSON(markRes);
+    if (!markRes.ok) throw new Error(markData.error || 'failed to update status');
+
+    renderTodaySlots(markData);
     loadStats();
-    if (data.postedUrl) {
-      alert('posted! ' + data.postedUrl);
+    if (tweetData.tweet_id) {
+      alert('posted! https://x.com/i/status/' + tweetData.tweet_id);
     }
   } catch (e) {
     alert('failed to post: ' + e.message);
@@ -277,15 +294,16 @@ async function postToX() {
   btn.textContent = 'posting...';
 
   try {
-    const res = await fetch('/api/post', {
+    const res = await fetch('/api/tweet', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: currentPost }),
     });
     const data = await safeJSON(res);
-    if (!res.ok) throw new Error(data.error || 'posting failed');
+    if (!data.success) throw new Error(data.error || 'posting failed');
 
-    showStatus(`posted! <a href="${data.url}" target="_blank" rel="noopener">view on x</a>`, 'success');
+    const url = data.tweet_id ? `https://x.com/i/status/${data.tweet_id}` : null;
+    showStatus(`posted!${url ? ` <a href="${url}" target="_blank" rel="noopener">view on x</a>` : ''}`, 'success');
     updateHistory(currentPost, 'posted');
   } catch (e) {
     showStatus(e.message, 'error');
