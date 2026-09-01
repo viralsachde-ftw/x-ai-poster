@@ -1,7 +1,6 @@
 const { generatePost } = require('../lib/grok');
 const { buildPrompt, buildTrendingPrompt } = require('../lib/prompts');
 const { pickRandomTopics, getTrendingTopics } = require('../lib/topics');
-const { postTweet } = require('../lib/twitter');
 const { getToday, setToday, isKVConfigured, addToHistory, isDuplicate } = require('../lib/kv');
 
 const SLOT_TYPES = ['daily', 'daily', 'trending'];
@@ -118,7 +117,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(today);
     }
 
-    if (action === 'post_now' && typeof slot === 'number' && slot >= 0 && slot < 3) {
+    if (action === 'prepare_post' && typeof slot === 'number' && slot >= 0 && slot < 3) {
       const today = await getToday();
       if (!today) {
         return res.status(400).json({ error: 'no posts generated today' });
@@ -127,20 +126,26 @@ module.exports = async function handler(req, res) {
       if (s.status === 'posted') {
         return res.status(400).json({ error: 'already posted' });
       }
-
       const dup = await isDuplicate(s.text);
       if (dup) {
         return res.status(400).json({ error: 'duplicate post — regenerate before posting' });
       }
+      return res.status(200).json({ text: s.text, slot });
+    }
 
-      const result = await postTweet(s.text);
-      await addToHistory(s.text);
+    if (action === 'mark_posted' && typeof slot === 'number' && slot >= 0 && slot < 3) {
+      const today = await getToday();
+      if (!today) {
+        return res.status(400).json({ error: 'no posts generated today' });
+      }
+      const { tweetId } = req.body;
+      await addToHistory(today.slots[slot].text);
       today.slots[slot].status = 'posted';
-      today.slots[slot].tweetId = result.data.id;
+      today.slots[slot].tweetId = tweetId || null;
       await setToday(today);
       return res.status(200).json({
         ...today,
-        postedUrl: result.data.id ? `https://x.com/i/status/${result.data.id}` : null,
+        postedUrl: tweetId ? `https://x.com/i/status/${tweetId}` : null,
       });
     }
 
